@@ -141,13 +141,16 @@ fn fill_draft(
           let w = text.grapheme_cell_width(g)
           let cell =
             Cell(content: Content(symbol: g, width: w), style: s, link: link)
-          case w >= 2 {
+          case is_ascii_control(g), w >= 2 {
+            // Match the Erlang fill_bin path: controls must neither reach
+            // the terminal nor advance the cell index. CRLF is one grapheme.
+            True, _ -> fill_draft(arr, idx, max_idx, rest, s, link)
             // A wide grapheme needs two columns. With only one left before
             // max_idx, leave the cell blank: writing the glyph anyway made it
             // overflow the clip boundary and shift everything to its right.
-            True if idx + 1 >= max_idx ->
+            False, True if idx + 1 >= max_idx ->
               fill_draft(arr, idx + 1, max_idx, rest, s, link)
-            True ->
+            False, True ->
               fill_draft(
                 draft_set(
                   idx + 1,
@@ -160,7 +163,7 @@ fn fill_draft(
                 s,
                 link,
               )
-            False ->
+            False, False ->
               fill_draft(
                 draft_set(idx, cell, arr),
                 idx + 1,
@@ -172,6 +175,16 @@ fn fill_draft(
           }
         }
       }
+  }
+}
+
+fn is_ascii_control(g: String) -> Bool {
+  case string.to_utf_codepoints(g) {
+    [] -> False
+    [cp, ..] -> {
+      let n = string.utf_codepoint_to_int(cp)
+      n < 0x20 || n == 0x7F
+    }
   }
 }
 
@@ -355,6 +368,9 @@ pub fn set_cell(buffer: Buffer, pos: geometry.Position, cell: Cell) -> Buffer {
 
 /// Set cells from a string starting at `pos`. No hyperlink.
 /// Wide graphemes (width=2) take one Cell + one Continuation cell.
+/// ASCII controls (U+0000–001F and DEL), including newlines and tabs, are
+/// ignored without consuming cells. Split lines / expand tabs before writing
+/// when they should affect layout.
 pub fn set_string(
   buffer: Buffer,
   pos: geometry.Position,
