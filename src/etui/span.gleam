@@ -165,6 +165,8 @@ pub fn line_width(l: Line) -> Int {
 /// Each span is drawn with its own fg/bg/modifier. Spans beyond max_width
 /// are silently dropped; a span that straddles the boundary is truncated.
 /// The line's `alignment` field shifts the start position within the available width.
+/// ASCII controls, including newlines and tabs, are ignored by the buffer.
+/// Use `text_plain` to split a string into multiple lines before rendering.
 pub fn render_line(
   buf: buffer.Buffer,
   pos: geometry.Position,
