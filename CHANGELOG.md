@@ -2,6 +2,16 @@
 
 All notable changes to étui are listed here.
 
+## 2.0.1 - 2026-10-26
+
+### Fixed
+
+- **Newlines inside spans could move the terminal cursor on JavaScript.**
+  The buffer now ignores ASCII controls (U+0000–001F and DEL) without consuming
+  cells, matching Erlang. This also fixes tabs and carriage returns in direct
+  buffer writes and pre-filled buffers. Use `span.text_plain` when newlines
+  should create separate rows. ([#11](https://github.com/lupodevelop/etui/issues/11))
+
 ## 2.0.0 - 2026-10-09
 
 Layout and composition primitives, an input parser, and a terminal you can
